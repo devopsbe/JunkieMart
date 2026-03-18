@@ -51,10 +51,6 @@ const upsertToken = db.prepare(`
     canonical_side=excluded.canonical_side, evm_is_pointer=excluded.evm_is_pointer,
     name=excluded.name, description=excluded.description, image=excluded.image,
     attributes=excluded.attributes,
-    listing_active=excluded.listing_active, listing_price_usei=excluded.listing_price_usei,
-    listed_by_cosmos=excluded.listed_by_cosmos, listed_by_evm=excluded.listed_by_evm,
-    active_contract=excluded.active_contract, listed_at=excluded.listed_at,
-    marketplace_contract=excluded.marketplace_contract,
     last_cosmos_tx=excluded.last_cosmos_tx, last_evm_tx=excluded.last_evm_tx,
     last_block=excluded.last_block, last_timestamp=excluded.last_timestamp,
     indexed_at=excluded.indexed_at
@@ -82,8 +78,8 @@ function getToken(id) {
 function getTokensByOwner(address) {
   const addr = address.toLowerCase();
   return db.prepare(
-    "SELECT * FROM tokens WHERE LOWER(cosmos_owner)=? OR LOWER(evm_owner)=?"
-  ).all(addr, addr);
+    "SELECT * FROM tokens WHERE LOWER(cosmos_owner)=? OR LOWER(evm_owner)=? OR LOWER(listed_by_cosmos)=? OR LOWER(listed_by_evm)=?"
+  ).all(addr, addr, addr, addr);
 }
 
 function getAllTokens({ listed, side, sort, page = 1, limit = 20 }) {

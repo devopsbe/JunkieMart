@@ -1,6 +1,6 @@
 const cosmos = require("./cosmos");
 const evm = require("./evm");
-const { upsertMany, updateListing } = require("./db");
+const { db, upsertMany, updateListing } = require("./db");
 
 const POINTER = (process.env.POINTER_CONTRACT_ADDRESS || "").toLowerCase();
 const TOTAL_SUPPLY = 990;
@@ -96,10 +96,15 @@ async function syncMarketplaceListings() {
   const evmMarket = process.env.EVM_MARKETPLACE;
   if (evmMarket) {
     try {
-      for (let id = 1; id <= TOTAL_SUPPLY; id++) {
-        const listing = await evm.queryMarketplaceListing(id);
+      const candidates = db.prepare(
+        "SELECT token_id FROM tokens WHERE LOWER(evm_owner) = ?"
+      ).all(evmMarket.toLowerCase());
+
+      let synced = 0;
+      for (const { token_id } of candidates) {
+        const listing = await evm.queryMarketplaceListing(Number(token_id));
         if (listing) {
-          updateListing(String(id), {
+          updateListing(token_id, {
             listing_active: 1,
             listing_price_usei: listing.price,
             listed_by_cosmos: null,
@@ -108,9 +113,10 @@ async function syncMarketplaceListings() {
             listed_at: listing.listedAt,
             marketplace_contract: evmMarket,
           });
+          synced++;
         }
       }
-      console.log("[reconcile] Synced EVM marketplace listings");
+      console.log(`[reconcile] Synced ${synced} EVM listings (checked ${candidates.length} candidates)`);
     } catch (e) {
       console.error("[reconcile] EVM listing sync failed:", e.message);
     }
