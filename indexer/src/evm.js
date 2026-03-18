@@ -1,5 +1,14 @@
 const { ethers } = require("ethers");
 
+const RPC_TIMEOUT = 15_000;
+
+function withTimeout(promise, ms = RPC_TIMEOUT) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
+
 const ERC721_ABI = [
   "function ownerOf(uint256 tokenId) view returns (address)",
   "function tokenURI(uint256 tokenId) view returns (string)",
@@ -35,9 +44,9 @@ function getMarketContract() {
 async function queryOwnerOf(tokenId) {
   try {
     const nft = getNftContract();
-    return await nft.ownerOf(tokenId);
+    return await withTimeout(nft.ownerOf(tokenId));
   } catch (e) {
-    console.error(`[evm] ownerOf(${tokenId}) failed:`, e.message);
+    if (e.message !== "timeout") console.error(`[evm] ownerOf(${tokenId}) failed:`, e.message);
     return null;
   }
 }
@@ -45,9 +54,9 @@ async function queryOwnerOf(tokenId) {
 async function queryTokenURI(tokenId) {
   try {
     const nft = getNftContract();
-    return await nft.tokenURI(tokenId);
+    return await withTimeout(nft.tokenURI(tokenId));
   } catch (e) {
-    console.error(`[evm] tokenURI(${tokenId}) failed:`, e.message);
+    if (e.message !== "timeout") console.error(`[evm] tokenURI(${tokenId}) failed:`, e.message);
     return null;
   }
 }

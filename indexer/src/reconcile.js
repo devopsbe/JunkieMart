@@ -19,10 +19,12 @@ async function fetchMetadataSafe(tokenId) {
   return await evm.fetchMetadata(tokenId);
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 async function fullReindex() {
   console.log(`[reconcile] Starting full re-index of ${TOTAL_SUPPLY} tokens...`);
   const records = [];
-  const batchSize = 50;
+  const batchSize = 10;
 
   for (let start = 1; start <= TOTAL_SUPPLY; start += batchSize) {
     const end = Math.min(start + batchSize - 1, TOTAL_SUPPLY);
@@ -40,6 +42,7 @@ async function fullReindex() {
     }
 
     console.log(`[reconcile] Indexed tokens ${start}-${end}`);
+    if (start + batchSize <= TOTAL_SUPPLY) await sleep(500);
   }
 
   if (records.length > 0) {
