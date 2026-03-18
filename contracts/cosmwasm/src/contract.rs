@@ -1,7 +1,8 @@
 use cosmwasm_std::{
-    entry_point, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
+    entry_point, to_json_binary, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env,
     MessageInfo, Order, Response, StdResult, Uint128, WasmMsg,
 };
+use cw_storage_plus::Bound;
 use serde::{Deserialize, Serialize};
 
 use crate::error::ContractError;
@@ -240,7 +241,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         }
         QueryMsg::AllListings { start_after, limit } => {
             let limit = limit.unwrap_or(30).min(100) as usize;
-            let start = start_after.as_deref().map(cosmwasm_std::Bound::exclusive);
+            let start = start_after.as_deref().map(Bound::exclusive);
             let listings: Vec<Listing> = LISTINGS
                 .range(deps.storage, start, None, Order::Ascending)
                 .take(limit)

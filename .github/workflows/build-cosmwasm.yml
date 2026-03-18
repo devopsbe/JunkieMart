@@ -1,0 +1,23 @@
+name: Build CosmWasm Contract
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build with cosmwasm/optimizer
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}/contracts/cosmwasm":/code \
+            --mount type=volume,source=cosmwasm_cache,target=/target \
+            --mount type=volume,source=registry_cache,target=/usr/local/cargo/registry \
+            cosmwasm/optimizer:0.17.0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cosmwasm-contract
+          path: contracts/cosmwasm/artifacts/*.wasm
