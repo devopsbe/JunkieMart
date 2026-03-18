@@ -5,25 +5,41 @@ const { upsertMany, updateListing } = require("./db");
 const POINTER = (process.env.POINTER_CONTRACT_ADDRESS || "").toLowerCase();
 const TOTAL_SUPPLY = 990;
 
+const ARWEAVE_GATEWAY = "https://arweave.developerdao.com";
+
+function rewriteGateway(url) {
+  if (!url) return url;
+  if (url.startsWith("ipfs://")) return url.replace("ipfs://", "https://ipfs.io/ipfs/");
+  if (url.startsWith("https://arweave.net/")) return url.replace("https://arweave.net/", `${ARWEAVE_GATEWAY}/`);
+  return url;
+}
+
 async function fetchMetadataSafe(tokenId) {
   try {
     const info = await cosmos.queryNftInfo(String(tokenId));
     if (info && info.token_uri) {
-      let url = info.token_uri;
-      if (url.startsWith("ipfs://")) url = url.replace("ipfs://", "https://ipfs.io/ipfs/");
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      if (res.ok) return await res.json();
+      const url = rewriteGateway(info.token_uri);
+      const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      if (res.ok) {
+        const meta = await res.json();
+        if (meta.image) meta.image = rewriteGateway(meta.image);
+        return meta;
+      }
     }
   } catch (_) { /* fall through to EVM */ }
 
-  return await evm.fetchMetadata(tokenId);
+  try {
+    const meta = await evm.fetchMetadata(tokenId);
+    if (meta && meta.image) meta.image = rewriteGateway(meta.image);
+    return meta;
+  } catch (_) { return null; }
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function fullReindex() {
   console.log(`[reconcile] Starting full re-index of ${TOTAL_SUPPLY} tokens...`);
-  const records = [];
+  let total = 0;
   const batchSize = 10;
 
   for (let start = 1; start <= TOTAL_SUPPLY; start += batchSize) {
@@ -31,27 +47,28 @@ async function fullReindex() {
     const promises = [];
 
     for (let id = start; id <= end; id++) {
-      promises.push(reconcileToken(id));
+      promises.push(
+        reconcileToken(id).catch((e) => {
+          console.error(`[reconcile] token ${id} failed:`, e.message);
+          return null;
+        })
+      );
     }
 
-    const batch = await Promise.allSettled(promises);
-    for (const result of batch) {
-      if (result.status === "fulfilled" && result.value) {
-        records.push(result.value);
-      }
+    const batch = (await Promise.all(promises)).filter(Boolean);
+
+    if (batch.length > 0) {
+      upsertMany(batch);
+      total += batch.length;
     }
 
-    console.log(`[reconcile] Indexed tokens ${start}-${end}`);
+    console.log(`[reconcile] Indexed tokens ${start}-${end} (${batch.length}/${end - start + 1} ok)`);
     if (start + batchSize <= TOTAL_SUPPLY) await sleep(500);
   }
 
-  if (records.length > 0) {
-    upsertMany(records);
-    console.log(`[reconcile] Stored ${records.length} token records`);
-  }
-
   await syncMarketplaceListings();
-  return records.length;
+  console.log(`[reconcile] Finished: ${total} tokens stored`);
+  return total;
 }
 
 async function syncMarketplaceListings() {

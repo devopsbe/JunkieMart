@@ -4,7 +4,7 @@ const app = require("./api");
 const { fullReindex } = require("./reconcile");
 
 const PORT = process.env.PORT || 3001;
-const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL_MS) || 6000;
+const POLL_INTERVAL = parseInt(process.env.POLL_INTERVAL_MS) || 300000;
 
 async function startPolling() {
   console.log("[indexer] Running initial full re-index...");
