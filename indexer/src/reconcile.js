@@ -106,7 +106,7 @@ async function syncMarketplaceListings() {
         if (listing) {
           updateListing(token_id, {
             listing_active: 1,
-            listing_price_usei: listing.price,
+            listing_price_usei: (BigInt(listing.price) / 1_000_000_000_000n).toString(),
             listed_by_cosmos: null,
             listed_by_evm: listing.seller,
             active_contract: "evm",
