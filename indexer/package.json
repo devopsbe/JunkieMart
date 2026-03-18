@@ -1,0 +1,19 @@
+{
+  "name": "v1-junkies-indexer",
+  "version": "1.0.0",
+  "description": "Unified dual-chain indexer for V1 Junkies Marketplace on Sei",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "@cosmjs/cosmwasm-stargate": "^0.32.4",
+    "@cosmjs/stargate": "^0.32.4",
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.4",
+    "express": "^4.21.2"
+  }
+}
