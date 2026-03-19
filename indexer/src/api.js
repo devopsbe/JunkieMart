@@ -6,8 +6,18 @@ const {
 } = require("./db");
 const { quickSync } = require("./reconcile");
 
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || "").split(",").filter(Boolean);
+if (ALLOWED_ORIGINS.length === 0) {
+  ALLOWED_ORIGINS.push(
+    "https://junkiemart.xyz",
+    "https://www.junkiemart.xyz",
+    "https://jumkiemart.lovable.app",
+    "http://localhost:5173"
+  );
+}
+
 const app = express();
-app.use(cors());
+app.use(cors({ origin: ALLOWED_ORIGINS }));
 app.use(express.json());
 
 app.get("/api/tokens", (req, res) => {
