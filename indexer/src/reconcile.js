@@ -1,6 +1,6 @@
 const cosmos = require("./cosmos");
 const evm = require("./evm");
-const { db, upsertMany, updateListing } = require("./db");
+const { db, upsertMany, updateListing, clearListing } = require("./db");
 
 const POINTER = (process.env.POINTER_CONTRACT_ADDRESS || "").toLowerCase();
 const TOTAL_SUPPLY = 990;
@@ -164,4 +164,95 @@ async function reconcileToken(tokenId) {
   };
 }
 
-module.exports = { fullReindex, reconcileToken, syncMarketplaceListings, TOTAL_SUPPLY };
+let lastEvmBlock = null;
+
+async function quickSync() {
+  let changes = 0;
+
+  const evmMarket = process.env.EVM_MARKETPLACE;
+  if (evmMarket) {
+    try {
+      if (lastEvmBlock === null) lastEvmBlock = await evm.getBlockNumber();
+
+      const events = await evm.getRecentMarketEvents(lastEvmBlock);
+      for (const ev of events) {
+        const tokenId = String(ev.args[0]);
+        const name = ev.fragment?.name || ev.eventName;
+
+        if (name === "Listed") {
+          const [, seller, price] = ev.args;
+          updateListing(tokenId, {
+            listing_active: 1,
+            listing_price_usei: (BigInt(price) / 1_000_000_000_000n).toString(),
+            listed_by_cosmos: null,
+            listed_by_evm: seller,
+            active_contract: "evm",
+            listed_at: Math.floor(Date.now() / 1000),
+            marketplace_contract: evmMarket,
+          });
+          db.prepare("UPDATE tokens SET evm_owner=? WHERE token_id=?").run(evmMarket, tokenId);
+          changes++;
+        } else if (name === "Sold") {
+          const [, buyer] = ev.args;
+          clearListing(tokenId, { evm_owner: buyer });
+          changes++;
+        } else if (name === "Cancelled") {
+          const [, seller] = ev.args;
+          clearListing(tokenId, { evm_owner: seller });
+          changes++;
+        } else if (name === "PriceUpdated") {
+          const [, newPrice] = ev.args;
+          db.prepare("UPDATE tokens SET listing_price_usei=?, indexed_at=? WHERE token_id=?")
+            .run((BigInt(newPrice) / 1_000_000_000_000n).toString(), Date.now(), tokenId);
+          changes++;
+        }
+
+        if (ev.blockNumber >= lastEvmBlock) lastEvmBlock = ev.blockNumber + 1;
+      }
+    } catch (e) {
+      console.error("[quickSync] EVM events failed:", e.message);
+    }
+  }
+
+  const cwMarket = process.env.COSMWASM_MARKETPLACE;
+  if (cwMarket) {
+    try {
+      const onChain = await cosmos.queryMarketplaceListings(cwMarket);
+      const onChainIds = new Set(onChain.map((l) => l.token_id));
+
+      for (const l of onChain) {
+        const row = db.prepare("SELECT listing_active, active_contract FROM tokens WHERE token_id=?").get(l.token_id);
+        if (!row || !row.listing_active || row.active_contract !== "cosmwasm") {
+          updateListing(l.token_id, {
+            listing_active: 1,
+            listing_price_usei: l.price,
+            listed_by_cosmos: l.seller,
+            listed_by_evm: null,
+            active_contract: "cosmwasm",
+            listed_at: l.listed_at || null,
+            marketplace_contract: cwMarket,
+          });
+          changes++;
+        }
+      }
+
+      const staleRows = db.prepare(
+        "SELECT token_id FROM tokens WHERE listing_active=1 AND active_contract='cosmwasm'"
+      ).all();
+      for (const { token_id } of staleRows) {
+        if (!onChainIds.has(token_id)) {
+          const newOwner = await cosmos.queryOwnerOf(token_id);
+          clearListing(token_id, { cosmos_owner: newOwner || null });
+          changes++;
+        }
+      }
+    } catch (e) {
+      console.error("[quickSync] CosmWasm sync failed:", e.message);
+    }
+  }
+
+  if (changes > 0) console.log(`[quickSync] Applied ${changes} changes`);
+  return changes;
+}
+
+module.exports = { fullReindex, quickSync, reconcileToken, syncMarketplaceListings, TOTAL_SUPPLY };

@@ -71,6 +71,23 @@ function updateListing(tokenId, listing) {
   `).run({ token_id: tokenId, ...listing, indexed_at: Date.now() });
 }
 
+function clearListing(tokenId, newOwner = {}) {
+  db.prepare(`
+    UPDATE tokens SET
+      listing_active=0, listing_price_usei=NULL,
+      listed_by_cosmos=NULL, listed_by_evm=NULL,
+      active_contract=NULL, listed_at=NULL,
+      marketplace_contract=NULL, indexed_at=@indexed_at,
+      cosmos_owner=COALESCE(@cosmos_owner, cosmos_owner),
+      evm_owner=COALESCE(@evm_owner, evm_owner)
+    WHERE token_id=@token_id
+  `).run({
+    token_id: tokenId, indexed_at: Date.now(),
+    cosmos_owner: newOwner.cosmos_owner || null,
+    evm_owner: newOwner.evm_owner || null,
+  });
+}
+
 function getToken(id) {
   return db.prepare("SELECT * FROM tokens WHERE token_id = ?").get(id);
 }
@@ -132,7 +149,7 @@ function getStats() {
 }
 
 module.exports = {
-  db, upsertToken, upsertMany, updateListing,
+  db, upsertToken, upsertMany, updateListing, clearListing,
   getToken, getTokensByOwner, getAllTokens,
   getListings, getListingByTokenId, getStats,
 };

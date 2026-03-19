@@ -96,17 +96,27 @@ async function getRecentMarketEvents(fromBlock = "latest") {
   const market = getMarketContract();
   if (!market) return [];
   try {
-    const events = await market.queryFilter("*", fromBlock);
-    return events;
+    const [listed, sold, cancelled, priceUpdated] = await Promise.all([
+      market.queryFilter("Listed", fromBlock, "latest"),
+      market.queryFilter("Sold", fromBlock, "latest"),
+      market.queryFilter("Cancelled", fromBlock, "latest"),
+      market.queryFilter("PriceUpdated", fromBlock, "latest"),
+    ]);
+    return [...listed, ...sold, ...cancelled, ...priceUpdated]
+      .sort((a, b) => (a.blockNumber - b.blockNumber) || (a.index - b.index));
   } catch (e) {
     console.error("[evm] marketplace event query failed:", e.message);
     return [];
   }
 }
 
+async function getBlockNumber() {
+  return getProvider().getBlockNumber();
+}
+
 module.exports = {
   getProvider, getNftContract, getMarketContract,
   queryOwnerOf, queryTokenURI, fetchMetadata,
-  queryMarketplaceListing, getRecentMarketEvents,
+  queryMarketplaceListing, getRecentMarketEvents, getBlockNumber,
   MARKETPLACE_ABI,
 };
