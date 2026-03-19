@@ -144,8 +144,11 @@ function getStats() {
   const evmHolders = db.prepare(
     "SELECT COUNT(DISTINCT evm_owner) as count FROM tokens WHERE evm_owner IS NOT NULL AND evm_is_pointer = 0"
   ).get().count;
+  const uniqueHolders = db.prepare(
+    "SELECT COUNT(DISTINCT cosmos_owner) as count FROM tokens WHERE cosmos_owner IS NOT NULL AND cosmos_owner != ''"
+  ).get().count;
 
-  return { total_supply: total, listed, floor_usei: floor, cosmos_holders: cosmosHolders, evm_holders: evmHolders };
+  return { total_supply: total, listed, floor_usei: floor, cosmos_holders: cosmosHolders, evm_holders: evmHolders, unique_holders: uniqueHolders };
 }
 
 module.exports = {
