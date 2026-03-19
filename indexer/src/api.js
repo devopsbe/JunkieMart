@@ -22,9 +22,11 @@ app.use(express.json());
 
 app.get("/api/tokens", (req, res) => {
   const { listed, side, sort, page = 1, limit = 20 } = req.query;
+  const safePage = Math.max(1, parseInt(page) || 1);
+  const safeLimit = Math.max(1, Math.min(100, parseInt(limit) || 20));
   const result = getAllTokens({
     listed, side, sort,
-    page: parseInt(page), limit: parseInt(limit),
+    page: safePage, limit: safeLimit,
   });
   res.json(result);
 });

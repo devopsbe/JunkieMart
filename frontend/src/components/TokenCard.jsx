@@ -1,3 +1,4 @@
+import { useState } from "react";
 import OwnerBadge from "./OwnerBadge";
 
 function shorten(addr) {
@@ -8,6 +9,31 @@ function shorten(addr) {
 function formatSei(usei) {
   if (!usei) return null;
   return (Number(usei) / 1e6).toFixed(2);
+}
+
+const FALLBACK_GATEWAY = "https://arweave.net";
+
+function NftImage({ src, alt, tokenId, className }) {
+  const [failed, setFailed] = useState(false);
+  const [usedFallback, setUsedFallback] = useState(false);
+
+  const handleError = () => {
+    if (!usedFallback && src?.includes("arweave.developerdao.com")) {
+      setUsedFallback(true);
+      return;
+    }
+    setFailed(true);
+  };
+
+  if (failed || !src) {
+    return <span className="text-zinc-600 text-4xl font-bold">#{tokenId}</span>;
+  }
+
+  const activeSrc = usedFallback
+    ? src.replace("https://arweave.developerdao.com", FALLBACK_GATEWAY)
+    : src;
+
+  return <img src={activeSrc} alt={alt} className={className} loading="lazy" onError={handleError} />;
 }
 
 export default function TokenCard({ token, onSelect }) {
@@ -22,11 +48,7 @@ export default function TokenCard({ token, onSelect }) {
       className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden cursor-pointer hover:border-zinc-600 transition group"
     >
       <div className="aspect-square bg-zinc-800 flex items-center justify-center overflow-hidden">
-        {img ? (
-          <img src={img} alt={token.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
-        ) : (
-          <span className="text-zinc-600 text-4xl font-bold">#{token.token_id}</span>
-        )}
+        <NftImage src={img} alt={token.name} tokenId={token.token_id} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
       </div>
 
       <div className="p-3 space-y-2">

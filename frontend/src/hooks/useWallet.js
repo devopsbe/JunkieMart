@@ -46,17 +46,18 @@ export function useWallet() {
   }, []);
 
   useEffect(() => {
-    if (window.compassEvm) {
-      window.compassEvm.on?.("accountsChanged", (accounts) => {
-        if (accounts.length === 0) {
-          setEvmAddr(null);
-          if (activeMode === "evm") setActiveMode(cosmosAddr ? "cosmos" : null);
-        } else {
-          setEvmAddr(accounts[0]);
-        }
-      });
-    }
-  }, [activeMode, cosmosAddr]);
+    if (!window.compassEvm?.on) return;
+    const handler = (accounts) => {
+      if (accounts.length === 0) {
+        setEvmAddr(null);
+        setActiveMode((m) => (m === "evm" ? null : m));
+      } else {
+        setEvmAddr(accounts[0]);
+      }
+    };
+    window.compassEvm.on("accountsChanged", handler);
+    return () => window.compassEvm.removeListener?.("accountsChanged", handler);
+  }, []);
 
   return { cosmosAddr, evmAddr, activeMode, connectCosmos, connectEvm, disconnect };
 }

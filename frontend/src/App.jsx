@@ -63,11 +63,15 @@ export default function App() {
             onBack={() => setSelectedToken(null)}
             onBuy={handleBuy}
             onCancel={handleCancel}
+            onListRequest={(id) => setListingToken(id)}
             activeMode={wallet.activeMode}
             cosmosAddr={wallet.cosmosAddr}
             evmAddr={wallet.evmAddr}
           />
         </main>
+        {listingToken && (
+          <ListingModal tokenId={listingToken} onList={handleList} onClose={() => setListingToken(null)} />
+        )}
       </div>
     );
   }
@@ -82,7 +86,7 @@ export default function App() {
             <Stat label="Supply" value={stats.total_supply} />
             <Stat label="Listed" value={stats.listed} />
             <Stat label="Floor" value={stats.floor_usei ? `${(stats.floor_usei / 1e6).toFixed(2)} SEI` : "—"} />
-            <Stat label="Holders" value={`${stats.cosmos_holders} CW / ${stats.evm_holders} EVM`} />
+            <Stat label="Holders" value={stats.unique_holders ?? "—"} />
           </div>
         )}
 

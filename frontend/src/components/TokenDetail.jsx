@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useToken } from "../hooks/useTokens";
 import OwnerBadge from "./OwnerBadge";
 
@@ -11,16 +12,42 @@ function formatSei(usei) {
   return (Number(usei) / 1e6).toFixed(2);
 }
 
-export default function TokenDetail({ tokenId, onBack, onBuy, onCancel, activeMode, cosmosAddr, evmAddr }) {
+const FALLBACK_GATEWAY = "https://arweave.net";
+
+function DetailImage({ src, alt, tokenId }) {
+  const [failed, setFailed] = useState(false);
+  const [usedFallback, setUsedFallback] = useState(false);
+
+  const handleError = () => {
+    if (!usedFallback && src?.includes("arweave.developerdao.com")) {
+      setUsedFallback(true);
+      return;
+    }
+    setFailed(true);
+  };
+
+  if (failed || !src) {
+    return <div className="w-full h-full flex items-center justify-center text-zinc-600 text-6xl font-bold">#{tokenId}</div>;
+  }
+
+  const activeSrc = usedFallback
+    ? src.replace("https://arweave.developerdao.com", FALLBACK_GATEWAY)
+    : src;
+
+  return <img src={activeSrc} alt={alt} className="w-full h-full object-cover" onError={handleError} />;
+}
+
+export default function TokenDetail({ tokenId, onBack, onBuy, onCancel, onListRequest, activeMode, cosmosAddr, evmAddr }) {
   const { token, loading } = useToken(tokenId);
 
   if (loading) return <div className="text-center py-12 text-zinc-500">Loading...</div>;
   if (!token) return <div className="text-center py-12 text-zinc-500">Token not found</div>;
 
   const img = token.image ? token.image.replace("ipfs://", "https://ipfs.io/ipfs/") : null;
+  const addr = (a) => a?.toLowerCase();
   const isOwner =
-    (cosmosAddr && token.cosmos_owner?.toLowerCase() === cosmosAddr.toLowerCase()) ||
-    (evmAddr && token.evm_owner?.toLowerCase() === evmAddr.toLowerCase());
+    (cosmosAddr && (addr(token.cosmos_owner) === addr(cosmosAddr) || addr(token.listed_by_cosmos) === addr(cosmosAddr))) ||
+    (evmAddr && (addr(token.evm_owner) === addr(evmAddr) || addr(token.listed_by_evm) === addr(evmAddr)));
 
   const attrs = token.attributes ? JSON.parse(token.attributes) : [];
 
@@ -30,11 +57,7 @@ export default function TokenDetail({ tokenId, onBack, onBuy, onCancel, activeMo
 
       <div className="grid md:grid-cols-2 gap-6">
         <div className="aspect-square bg-zinc-800 rounded-xl overflow-hidden">
-          {img ? (
-            <img src={img} alt={token.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-zinc-600 text-6xl font-bold">#{token.token_id}</div>
-          )}
+          <DetailImage src={img} alt={token.name} tokenId={token.token_id} />
         </div>
 
         <div className="space-y-4">
@@ -69,8 +92,15 @@ export default function TokenDetail({ tokenId, onBack, onBuy, onCancel, activeMo
               )}
             </div>
           ) : (
-            <div className="bg-zinc-800/50 rounded-lg p-4">
+            <div className="bg-zinc-800/50 rounded-lg p-4 space-y-3">
               <p className="text-zinc-500 text-sm">Not currently listed</p>
+              {isOwner && activeMode ? (
+                <button onClick={() => onListRequest?.(token.token_id)} className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition">
+                  List for Sale
+                </button>
+              ) : !activeMode ? (
+                <p className="text-zinc-500 text-xs text-center">Connect a wallet to interact</p>
+              ) : null}
             </div>
           )}
 

@@ -48,37 +48,15 @@ async function queryNftInfo(tokenId) {
   }
 }
 
-async function queryAllCW721Owners(batchSize = 30) {
-  const c = await getClient();
-  const owners = {};
-  let startAfter = undefined;
-
-  while (true) {
-    const query = { all_tokens: { limit: batchSize } };
-    if (startAfter) query.all_tokens.start_after = startAfter;
-
-    const res = await c.queryContractSmart(process.env.CW721_CONTRACT, query);
-    if (!res.tokens || res.tokens.length === 0) break;
-
-    for (const tokenId of res.tokens) {
-      const owner = await queryOwnerOf(tokenId);
-      owners[tokenId] = owner;
-    }
-
-    startAfter = res.tokens[res.tokens.length - 1];
-    if (res.tokens.length < batchSize) break;
-  }
-
-  return owners;
-}
-
 async function queryMarketplaceListings(marketplaceAddr) {
   if (!marketplaceAddr) return [];
   const c = await getClient();
   try {
-    const res = await c.queryContractSmart(marketplaceAddr, {
-      all_listings: { limit: 100 },
-    });
+    const res = await withTimeout(
+      c.queryContractSmart(marketplaceAddr, {
+        all_listings: { limit: 100 },
+      })
+    );
     return res.listings || [];
   } catch (e) {
     console.error("[cosmos] marketplace query failed:", e.message);
@@ -88,5 +66,5 @@ async function queryMarketplaceListings(marketplaceAddr) {
 
 module.exports = {
   getClient, queryOwnerOf, queryNftInfo,
-  queryAllCW721Owners, queryMarketplaceListings,
+  queryMarketplaceListings,
 };

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 
-const API = "/api";
+const API = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : "/api";
 
 export function useTokens({ listed, side, sort, page = 1, limit = 20 } = {}) {
   const [data, setData] = useState({ tokens: [], total: 0, page: 1, limit: 20 });

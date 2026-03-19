@@ -131,6 +131,9 @@ function getListingByTokenId(tokenId) {
 }
 
 function getStats() {
+  const cwMarket = (process.env.COSMWASM_MARKETPLACE || "").toLowerCase();
+  const evmMarket = (process.env.EVM_MARKETPLACE || "").toLowerCase();
+
   const total = db.prepare("SELECT COUNT(*) as count FROM tokens").get().count;
   const listed = db.prepare("SELECT COUNT(*) as count FROM tokens WHERE listing_active = 1").get().count;
 
@@ -139,14 +142,14 @@ function getStats() {
   ).get().floor;
 
   const cosmosHolders = db.prepare(
-    "SELECT COUNT(DISTINCT cosmos_owner) as count FROM tokens WHERE cosmos_owner IS NOT NULL"
-  ).get().count;
+    "SELECT COUNT(DISTINCT cosmos_owner) as count FROM tokens WHERE cosmos_owner IS NOT NULL AND LOWER(cosmos_owner) != ?"
+  ).get(cwMarket).count;
   const evmHolders = db.prepare(
-    "SELECT COUNT(DISTINCT evm_owner) as count FROM tokens WHERE evm_owner IS NOT NULL AND evm_is_pointer = 0"
-  ).get().count;
+    "SELECT COUNT(DISTINCT evm_owner) as count FROM tokens WHERE evm_owner IS NOT NULL AND evm_is_pointer = 0 AND LOWER(evm_owner) != ?"
+  ).get(evmMarket).count;
   const uniqueHolders = db.prepare(
-    "SELECT COUNT(DISTINCT cosmos_owner) as count FROM tokens WHERE cosmos_owner IS NOT NULL AND cosmos_owner != ''"
-  ).get().count;
+    "SELECT COUNT(DISTINCT cosmos_owner) as count FROM tokens WHERE cosmos_owner IS NOT NULL AND cosmos_owner != '' AND LOWER(cosmos_owner) != ?"
+  ).get(cwMarket).count;
 
   return { total_supply: total, listed, floor_usei: floor, cosmos_holders: cosmosHolders, evm_holders: evmHolders, unique_holders: uniqueHolders };
 }
