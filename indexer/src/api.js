@@ -4,6 +4,7 @@ const {
   getToken, getTokensByOwner, getAllTokens,
   getListings, getListingByTokenId, getStats,
 } = require("./db");
+const { quickSync } = require("./reconcile");
 
 const app = express();
 app.use(cors());
@@ -45,6 +46,20 @@ app.get("/api/stats", (_req, res) => {
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
+});
+
+let lastSyncAt = 0;
+app.post("/api/sync", async (_req, res) => {
+  if (Date.now() - lastSyncAt < 3000) {
+    return res.json({ status: "debounced", changes: 0 });
+  }
+  lastSyncAt = Date.now();
+  try {
+    const changes = await quickSync();
+    res.json({ status: "ok", changes });
+  } catch (e) {
+    res.status(500).json({ status: "error", message: e.message });
+  }
 });
 
 module.exports = app;
