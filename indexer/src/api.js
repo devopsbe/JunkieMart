@@ -60,8 +60,14 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
 });
 
+const SYNC_SECRET = process.env.SYNC_SECRET || "";
+
 let lastSyncAt = 0;
-app.post("/api/sync", async (_req, res) => {
+app.post("/api/sync", async (req, res) => {
+  if (SYNC_SECRET) {
+    const token = (req.headers.authorization || "").replace("Bearer ", "");
+    if (token !== SYNC_SECRET) return res.status(401).json({ error: "unauthorized" });
+  }
   if (Date.now() - lastSyncAt < 3000) {
     return res.json({ status: "debounced", changes: 0 });
   }

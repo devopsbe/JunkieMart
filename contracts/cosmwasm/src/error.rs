@@ -26,4 +26,10 @@ pub enum ContractError {
 
     #[error("Price must be greater than zero")]
     ZeroPrice {},
+
+    #[error("Fee basis points too high (max 1000)")]
+    FeeTooHigh {},
+
+    #[error("Must send exactly one coin of denom usei")]
+    InvalidFunds {},
 }

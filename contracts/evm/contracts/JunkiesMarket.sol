@@ -26,6 +26,8 @@ contract JunkiesMarket is Ownable, ReentrancyGuard {
     event PriceUpdated(uint256 indexed tokenId, uint256 newPrice);
 
     constructor(address _nftContract, address _feeRecipient) Ownable(msg.sender) {
+        require(_nftContract != address(0), "Invalid NFT address");
+        require(_feeRecipient != address(0), "Invalid fee recipient");
         nftContract = IERC721(_nftContract);
         feeRecipient = _feeRecipient;
     }
@@ -46,6 +48,7 @@ contract JunkiesMarket is Ownable, ReentrancyGuard {
     }
 
     function buyNFT(uint256 tokenId) external payable nonReentrant {
+        require(!paused, "Marketplace paused");
         Listing memory listing = listings[tokenId];
         require(listing.seller != address(0), "Not listed");
         require(msg.value == listing.price, "Wrong price");
@@ -56,8 +59,13 @@ contract JunkiesMarket is Ownable, ReentrancyGuard {
         uint256 sellerProceeds = listing.price - fee;
 
         nftContract.transferFrom(address(this), msg.sender, tokenId);
-        payable(listing.seller).transfer(sellerProceeds);
-        if (fee > 0) payable(feeRecipient).transfer(fee);
+
+        (bool sentSeller, ) = payable(listing.seller).call{value: sellerProceeds}("");
+        require(sentSeller, "Seller payment failed");
+        if (fee > 0) {
+            (bool sentFee, ) = payable(feeRecipient).call{value: fee}("");
+            require(sentFee, "Fee payment failed");
+        }
 
         emit Sold(tokenId, msg.sender, listing.seller, listing.price);
     }
@@ -86,6 +94,7 @@ contract JunkiesMarket is Ownable, ReentrancyGuard {
     }
 
     function setFeeRecipient(address _recipient) external onlyOwner {
+        require(_recipient != address(0), "Invalid fee recipient");
         feeRecipient = _recipient;
     }
 }

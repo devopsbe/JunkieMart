@@ -32,6 +32,10 @@ function getProvider() {
   return provider;
 }
 
+function resetProvider() {
+  provider = null;
+}
+
 function getNftContract() {
   return new ethers.Contract(process.env.ERC721_POINTER, ERC721_ABI, getProvider());
 }
@@ -47,6 +51,7 @@ async function queryOwnerOf(tokenId) {
     return await withTimeout(nft.ownerOf(tokenId));
   } catch (e) {
     if (e.message !== "timeout") console.error(`[evm] ownerOf(${tokenId}) failed:`, e.message);
+    if (e.code === "NETWORK_ERROR" || e.message === "timeout") resetProvider();
     return null;
   }
 }
@@ -106,6 +111,7 @@ async function getRecentMarketEvents(fromBlock = "latest") {
       .sort((a, b) => (a.blockNumber - b.blockNumber) || (a.index - b.index));
   } catch (e) {
     console.error("[evm] marketplace event query failed:", e.message);
+    if (e.code === "NETWORK_ERROR" || e.message === "timeout") resetProvider();
     return [];
   }
 }
@@ -115,7 +121,7 @@ async function getBlockNumber() {
 }
 
 module.exports = {
-  getProvider, getNftContract, getMarketContract,
+  getProvider, resetProvider, getNftContract, getMarketContract,
   queryOwnerOf, queryTokenURI, fetchMetadata,
   queryMarketplaceListing, getRecentMarketEvents, getBlockNumber,
   MARKETPLACE_ABI,

@@ -18,6 +18,10 @@ async function getClient() {
   return client;
 }
 
+function resetClient() {
+  client = null;
+}
+
 async function queryOwnerOf(tokenId) {
   const c = await getClient();
   try {
@@ -29,6 +33,7 @@ async function queryOwnerOf(tokenId) {
     return res.owner;
   } catch (e) {
     if (e.message !== "timeout") console.error(`[cosmos] ownerOf(${tokenId}) failed:`, e.message);
+    if (e.message === "timeout" || e.message?.includes("socket")) resetClient();
     return null;
   }
 }
@@ -60,11 +65,12 @@ async function queryMarketplaceListings(marketplaceAddr) {
     return res.listings || [];
   } catch (e) {
     console.error("[cosmos] marketplace query failed:", e.message);
+    if (e.message === "timeout" || e.message?.includes("socket")) resetClient();
     return [];
   }
 }
 
 module.exports = {
-  getClient, queryOwnerOf, queryNftInfo,
+  getClient, resetClient, queryOwnerOf, queryNftInfo,
   queryMarketplaceListings,
 };

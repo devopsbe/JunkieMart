@@ -86,13 +86,21 @@ async function evmListNft(tokenId, priceUsei) {
   const { BrowserProvider, Contract, parseEther } = await import("ethers");
   const provider = new BrowserProvider(window.compassEvm);
   const signer = await provider.getSigner();
+  const signerAddr = await signer.getAddress();
 
   const nft = new Contract(
     import.meta.env.VITE_ERC721_POINTER,
-    ["function setApprovalForAll(address operator, bool approved) external"],
+    [
+      "function setApprovalForAll(address operator, bool approved) external",
+      "function isApprovedForAll(address owner, address operator) view returns (bool)",
+    ],
     signer
   );
-  await (await nft.setApprovalForAll(EVM_MARKETPLACE, true)).wait();
+
+  const approved = await nft.isApprovedForAll(signerAddr, EVM_MARKETPLACE);
+  if (!approved) {
+    await (await nft.setApprovalForAll(EVM_MARKETPLACE, true)).wait();
+  }
 
   const market = new Contract(EVM_MARKETPLACE, EVM_MARKET_ABI, signer);
   const priceWei = parseEther((Number(priceUsei) / 1e6).toString());

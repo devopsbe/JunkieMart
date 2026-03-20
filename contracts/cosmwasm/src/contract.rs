@@ -22,6 +22,9 @@ pub fn instantiate(
     info: MessageInfo,
     msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
+    if msg.fee_bps > 1000 {
+        return Err(ContractError::FeeTooHigh {});
+    }
     let config = Config {
         cw721_contract: deps.api.addr_validate(&msg.cw721_contract)?,
         admin: info.sender,
@@ -46,6 +49,7 @@ pub fn execute(
         ExecuteMsg::CancelListing { token_id } => exec_cancel(deps, info, token_id),
         ExecuteMsg::UpdatePrice { token_id, new_price } => exec_update_price(deps, info, token_id, new_price),
         ExecuteMsg::SetPaused { paused } => exec_set_paused(deps, info, paused),
+        ExecuteMsg::UpdateConfig { fee_bps, fee_recipient, admin } => exec_update_config(deps, info, fee_bps, fee_recipient, admin),
     }
 }
 
@@ -104,14 +108,15 @@ fn exec_buy(
 
     let config = CONFIG.load(deps.storage)?;
 
-    let sent = info
-        .funds
-        .iter()
-        .find(|c| c.denom == "usei")
-        .map(|c| c.amount)
-        .unwrap_or(Uint128::zero());
+    if config.paused {
+        return Err(ContractError::Paused {});
+    }
 
-    if sent != listing.price {
+    if info.funds.len() != 1 || info.funds[0].denom != "usei" {
+        return Err(ContractError::InvalidFunds {});
+    }
+
+    if info.funds[0].amount != listing.price {
         return Err(ContractError::WrongAmount {});
     }
 
@@ -230,6 +235,33 @@ fn exec_set_paused(
     Ok(Response::new()
         .add_attribute("action", "set_paused")
         .add_attribute("paused", paused.to_string()))
+}
+
+fn exec_update_config(
+    deps: DepsMut,
+    info: MessageInfo,
+    fee_bps: Option<u64>,
+    fee_recipient: Option<String>,
+    admin: Option<String>,
+) -> Result<Response, ContractError> {
+    let mut config = CONFIG.load(deps.storage)?;
+    if info.sender != config.admin {
+        return Err(ContractError::Unauthorized {});
+    }
+    if let Some(bps) = fee_bps {
+        if bps > 1000 {
+            return Err(ContractError::FeeTooHigh {});
+        }
+        config.fee_bps = bps;
+    }
+    if let Some(recipient) = fee_recipient {
+        config.fee_recipient = deps.api.addr_validate(&recipient)?;
+    }
+    if let Some(new_admin) = admin {
+        config.admin = deps.api.addr_validate(&new_admin)?;
+    }
+    CONFIG.save(deps.storage, &config)?;
+    Ok(Response::new().add_attribute("action", "update_config"))
 }
 
 #[entry_point]

@@ -19,6 +19,7 @@ pub enum ExecuteMsg {
     CancelListing { token_id: String },
     UpdatePrice { token_id: String, new_price: Uint128 },
     SetPaused { paused: bool },
+    UpdateConfig { fee_bps: Option<u64>, fee_recipient: Option<String>, admin: Option<String> },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
