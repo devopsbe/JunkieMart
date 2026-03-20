@@ -14,11 +14,10 @@ export default function App() {
 
   const [selectedToken, setSelectedToken] = useState(null);
   const [listingToken, setListingToken] = useState(null);
-  const [filters, setFilters] = useState({ listed: false, side: "", sort: "token_id", page: 1 });
+  const [filters, setFilters] = useState({ listed: false, sort: "token_id", page: 1 });
 
   const { tokens, total, loading, refetch } = useTokens({
     listed: filters.listed || undefined,
-    side: filters.side || undefined,
     sort: filters.sort,
     page: filters.page,
     limit: 20,
@@ -55,7 +54,7 @@ export default function App() {
 
   if (selectedToken) {
     return (
-      <div className="min-h-screen bg-zinc-950 text-white">
+      <div className="min-h-screen" style={{ background: "var(--cjsc-bg)" }}>
         <Header wallet={wallet} />
         <main className="max-w-6xl mx-auto px-4 py-6">
           <TokenDetail
@@ -77,48 +76,39 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen" style={{ background: "var(--cjsc-bg)" }}>
       <Header wallet={wallet} />
 
       <main className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {stats && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Stat label="Supply" value={stats.total_supply} />
-            <Stat label="Listed" value={stats.listed} />
-            <Stat label="Floor" value={stats.floor_usei ? `${(stats.floor_usei / 1e6).toFixed(2)} SEI` : "—"} />
-            <Stat label="Holders" value={stats.unique_holders ?? "—"} />
+            <Stat label="SUPPLY" value={stats.total_supply} />
+            <Stat label="LISTED" value={stats.listed} color="var(--cjsc-green)" />
+            <Stat label="FLOOR" value={stats.floor_usei ? `${(stats.floor_usei / 1e6).toFixed(2)} SEI` : "—"} color="var(--cjsc-gold)" />
+            <Stat label="HOLDERS" value={stats.unique_holders ?? "—"} />
           </div>
         )}
 
         <div className="flex flex-wrap items-center gap-3">
           <select
-            value={filters.side}
-            onChange={(e) => setFilters((f) => ({ ...f, side: e.target.value, page: 1 }))}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-300"
-          >
-            <option value="">All Sides</option>
-            <option value="cosmos">Cosmos</option>
-            <option value="evm">EVM</option>
-          </select>
-
-          <select
             value={filters.sort}
             onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value, page: 1 }))}
-            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-300"
+            className="font-mono text-xs px-3 py-1.5 rounded border outline-none"
+            style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)", color: "var(--cjsc-fg)" }}
           >
-            <option value="token_id">Token ID</option>
-            <option value="price_asc">Price: Low → High</option>
-            <option value="price_desc">Price: High → Low</option>
+            <option value="token_id">TOKEN ID</option>
+            <option value="price_asc">PRICE: LOW → HIGH</option>
+            <option value="price_desc">PRICE: HIGH → LOW</option>
           </select>
 
-          <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+          <label className="flex items-center gap-2 text-xs font-mono cursor-pointer" style={{ color: "var(--cjsc-muted)" }}>
             <input
               type="checkbox"
               checked={filters.listed}
               onChange={(e) => setFilters((f) => ({ ...f, listed: e.target.checked, page: 1 }))}
-              className="accent-emerald-500"
+              style={{ accentColor: "var(--cjsc-red)" }}
             />
-            Listed only
+            LISTED ONLY
           </label>
         </div>
 
@@ -129,17 +119,21 @@ export default function App() {
             <button
               disabled={filters.page <= 1}
               onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}
-              className="px-3 py-1 rounded bg-zinc-800 text-zinc-300 disabled:opacity-30"
+              className="font-mono text-xs px-4 py-1.5 rounded border transition disabled:opacity-20"
+              style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)", color: "var(--cjsc-fg)" }}
             >
-              ← Prev
+              ← PREV
             </button>
-            <span className="text-sm text-zinc-500">Page {filters.page} of {totalPages}</span>
+            <span className="text-xs font-mono" style={{ color: "var(--cjsc-muted)" }}>
+              {filters.page} / {totalPages}
+            </span>
             <button
               disabled={filters.page >= totalPages}
               onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}
-              className="px-3 py-1 rounded bg-zinc-800 text-zinc-300 disabled:opacity-30"
+              className="font-mono text-xs px-4 py-1.5 rounded border transition disabled:opacity-20"
+              style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)", color: "var(--cjsc-fg)" }}
             >
-              Next →
+              NEXT →
             </button>
           </div>
         )}
@@ -154,22 +148,24 @@ export default function App() {
 
 function Header({ wallet }) {
   return (
-    <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-40">
+    <header className="sticky top-0 z-40 backdrop-blur-sm border-b" style={{ background: "var(--cjsc-bg)", borderColor: "var(--cjsc-border)" }}>
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold tracking-tight">
-          <span className="text-emerald-400">V1</span> Junkies Market
-        </h1>
+        <div className="flex items-center gap-2">
+          <span className="font-display text-lg font-bold tracking-tight uppercase" style={{ color: "var(--cjsc-red)" }}>CJSC</span>
+          <span className="font-mono text-xs" style={{ color: "var(--cjsc-muted)" }}>//</span>
+          <span className="font-display text-sm font-medium tracking-wider uppercase" style={{ color: "var(--cjsc-fg)" }}>JUNKIEMART</span>
+        </div>
         <WalletConnect {...wallet} />
       </div>
     </header>
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, color }) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-3">
-      <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{label}</p>
-      <p className="text-lg font-semibold text-zinc-100">{value}</p>
+    <div className="rounded border p-3" style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)" }}>
+      <p className="font-mono text-[10px] uppercase tracking-widest" style={{ color: "var(--cjsc-cyan)" }}>{label}</p>
+      <p className="font-display text-lg font-bold" style={{ color: color || "var(--cjsc-fg)" }}>{value}</p>
     </div>
   );
 }

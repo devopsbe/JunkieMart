@@ -23,6 +23,8 @@ npm install
 npm start               # runs on http://localhost:3001
 ```
 
+**Render:** The indexer pins **Node 20.x** (`package.json` `engines`) so `better-sqlite3` native binaries match the runtime. If you still see `NODE_MODULE_VERSION` / `better_sqlite3.node` errors after changing Node version, use **Dashboard → your service → Clear build cache & deploy**.
+
 ### 2. EVM Contract (compile + test)
 
 ```bash

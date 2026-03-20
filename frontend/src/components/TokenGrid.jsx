@@ -5,11 +5,11 @@ export default function TokenGrid({ tokens, loading, onSelect }) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {Array.from({ length: 20 }).map((_, i) => (
-          <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden animate-pulse">
-            <div className="aspect-square bg-zinc-800" />
+          <div key={i} className="rounded overflow-hidden animate-pulse border" style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)" }}>
+            <div className="aspect-square" style={{ background: "var(--cjsc-bg)" }} />
             <div className="p-3 space-y-2">
-              <div className="h-4 bg-zinc-800 rounded w-3/4" />
-              <div className="h-3 bg-zinc-800 rounded w-1/2" />
+              <div className="h-4 rounded w-3/4" style={{ background: "var(--cjsc-border)" }} />
+              <div className="h-3 rounded w-1/2" style={{ background: "var(--cjsc-border)" }} />
             </div>
           </div>
         ))}
@@ -18,7 +18,7 @@ export default function TokenGrid({ tokens, loading, onSelect }) {
   }
 
   if (!tokens || tokens.length === 0) {
-    return <p className="text-center text-zinc-500 py-12">No tokens found</p>;
+    return <p className="text-center font-mono text-sm py-12" style={{ color: "var(--cjsc-muted)" }}>NO TOKENS FOUND</p>;
   }
 
   return (

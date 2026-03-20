@@ -23,12 +23,20 @@ export default function ListingModal({ tokenId, onList, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
-        <h2 className="text-lg font-bold text-white mb-4">List Crypto Junkie #{tokenId}</h2>
+      <div
+        className="rounded p-6 w-full max-w-sm border"
+        style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="font-display text-lg font-bold uppercase tracking-tight mb-4" style={{ color: "var(--cjsc-fg)" }}>
+          List Crypto Junkie #{tokenId}
+        </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm text-zinc-400 block mb-1">Price (SEI)</label>
+            <label className="font-mono text-[10px] uppercase tracking-widest block mb-1" style={{ color: "var(--cjsc-cyan)" }}>
+              PRICE (SEI)
+            </label>
             <input
               type="number"
               step="0.01"
@@ -36,17 +44,34 @@ export default function ListingModal({ tokenId, onList, onClose }) {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="10.00"
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-emerald-500"
+              className="w-full rounded px-3 py-2 font-mono text-sm border outline-none transition"
+              style={{
+                background: "var(--cjsc-bg)",
+                borderColor: "var(--cjsc-border)",
+                color: "var(--cjsc-fg)",
+              }}
+              onFocus={(e) => e.target.style.borderColor = "var(--cjsc-red)"}
+              onBlur={(e) => e.target.style.borderColor = "var(--cjsc-border)"}
               autoFocus
             />
           </div>
 
           <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition">
-              Cancel
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2 rounded font-display text-sm font-medium uppercase tracking-wider transition border"
+              style={{ background: "var(--cjsc-bg)", borderColor: "var(--cjsc-border)", color: "var(--cjsc-fg)" }}
+            >
+              CANCEL
             </button>
-            <button type="submit" disabled={loading || !price} className="flex-1 py-2 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-500 disabled:opacity-50 transition">
-              {loading ? "Listing..." : "List NFT"}
+            <button
+              type="submit"
+              disabled={loading || !price}
+              className="flex-1 py-2 rounded font-display text-sm font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:opacity-40"
+              style={{ background: "var(--cjsc-red)" }}
+            >
+              {loading ? "LISTING..." : "LIST NFT"}
             </button>
           </div>
         </form>

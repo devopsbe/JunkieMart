@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useToken } from "../hooks/useTokens";
-import OwnerBadge from "./OwnerBadge";
 
 function shorten(addr) {
   if (!addr) return "—";
@@ -27,7 +26,11 @@ function DetailImage({ src, alt, tokenId }) {
   };
 
   if (failed || !src) {
-    return <div className="w-full h-full flex items-center justify-center text-zinc-600 text-6xl font-bold">#{tokenId}</div>;
+    return (
+      <div className="w-full h-full flex items-center justify-center font-display text-6xl font-bold" style={{ color: "var(--cjsc-muted)" }}>
+        #{tokenId}
+      </div>
+    );
   }
 
   const activeSrc = usedFallback
@@ -40,8 +43,8 @@ function DetailImage({ src, alt, tokenId }) {
 export default function TokenDetail({ tokenId, onBack, onBuy, onCancel, onListRequest, activeMode, cosmosAddr, evmAddr }) {
   const { token, loading } = useToken(tokenId);
 
-  if (loading) return <div className="text-center py-12 text-zinc-500">Loading...</div>;
-  if (!token) return <div className="text-center py-12 text-zinc-500">Token not found</div>;
+  if (loading) return <div className="text-center py-12 font-mono text-sm" style={{ color: "var(--cjsc-muted)" }}>LOADING...</div>;
+  if (!token) return <div className="text-center py-12 font-mono text-sm" style={{ color: "var(--cjsc-muted)" }}>TOKEN NOT FOUND</div>;
 
   const img = token.image ? token.image.replace("ipfs://", "https://ipfs.io/ipfs/") : null;
   const addr = (a) => a?.toLowerCase();
@@ -49,69 +52,94 @@ export default function TokenDetail({ tokenId, onBack, onBuy, onCancel, onListRe
     (cosmosAddr && (addr(token.cosmos_owner) === addr(cosmosAddr) || addr(token.listed_by_cosmos) === addr(cosmosAddr))) ||
     (evmAddr && (addr(token.evm_owner) === addr(evmAddr) || addr(token.listed_by_evm) === addr(evmAddr)));
 
+  const displayOwner = token.cosmos_owner || token.evm_owner;
   const attrs = token.attributes ? JSON.parse(token.attributes) : [];
 
   return (
     <div className="max-w-3xl mx-auto">
-      <button onClick={onBack} className="text-zinc-400 hover:text-white mb-4 text-sm">← Back to collection</button>
+      <button
+        onClick={onBack}
+        className="font-mono text-xs mb-4 transition hover:opacity-100 opacity-60"
+        style={{ color: "var(--cjsc-fg)" }}
+      >
+        ← BACK
+      </button>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="aspect-square bg-zinc-800 rounded-xl overflow-hidden">
+        <div className="aspect-square rounded overflow-hidden border" style={{ background: "var(--cjsc-bg)", borderColor: "var(--cjsc-border)" }}>
           <DetailImage src={img} alt={token.name} tokenId={token.token_id} />
         </div>
 
         <div className="space-y-4">
-          <div>
-            <h1 className="text-2xl font-bold text-white">{token.name || `Crypto Junkie #${token.token_id}`}</h1>
-            <OwnerBadge side={token.canonical_side} />
-          </div>
+          <h1 className="font-display text-2xl font-bold uppercase tracking-tight" style={{ color: "var(--cjsc-fg)" }}>
+            {token.name || `Crypto Junkie #${token.token_id}`}
+          </h1>
 
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-zinc-500">Cosmos Owner</span><span className="text-zinc-300 font-mono">{shorten(token.cosmos_owner)}</span></div>
-            <div className="flex justify-between"><span className="text-zinc-500">EVM Owner</span><span className="text-zinc-300 font-mono">{shorten(token.evm_owner)}</span></div>
-            <div className="flex justify-between"><span className="text-zinc-500">Status</span><span className="text-zinc-300">{token.evm_is_pointer ? "● Cosmos-native" : "● EVM-claimed"}</span></div>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: "var(--cjsc-cyan)" }}>OWNER</span>
+              <span className="font-mono text-xs" style={{ color: "var(--cjsc-fg)" }}>{shorten(displayOwner)}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: "var(--cjsc-cyan)" }}>TOKEN ID</span>
+              <span className="font-mono text-xs" style={{ color: "var(--cjsc-fg)" }}>#{token.token_id}</span>
+            </div>
           </div>
 
           {token.listing_active ? (
-            <div className="bg-zinc-800/50 rounded-lg p-4 space-y-3">
+            <div className="rounded p-4 space-y-3 border" style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)" }}>
               <div className="flex justify-between items-center">
-                <span className="text-zinc-400 text-sm">Listed Price</span>
-                <span className="text-emerald-400 text-xl font-bold">{formatSei(token.listing_price_usei)} SEI</span>
+                <span className="font-mono text-[10px] uppercase tracking-widest" style={{ color: "var(--cjsc-cyan)" }}>PRICE</span>
+                <span className="font-display text-xl font-bold" style={{ color: "var(--cjsc-gold)" }}>
+                  {formatSei(token.listing_price_usei)} SEI
+                </span>
               </div>
 
               {isOwner ? (
-                <button onClick={() => onCancel?.(token.token_id)} className="w-full py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium transition">
-                  Cancel Listing
+                <button
+                  onClick={() => onCancel?.(token.token_id)}
+                  className="w-full py-2.5 rounded font-display text-sm font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+                  style={{ background: "var(--cjsc-orange)" }}
+                >
+                  CANCEL LISTING
                 </button>
               ) : activeMode ? (
-                <button onClick={() => onBuy?.(token.token_id, token.listing_price_usei)} className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition">
-                  Buy with {activeMode === "cosmos" ? "Cosmos" : "EVM"} Wallet
+                <button
+                  onClick={() => onBuy?.(token.token_id, token.listing_price_usei)}
+                  className="w-full py-2.5 rounded font-display text-sm font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+                  style={{ background: "var(--cjsc-red)" }}
+                >
+                  BUY NOW
                 </button>
               ) : (
-                <p className="text-zinc-500 text-sm text-center">Connect a wallet to buy</p>
+                <p className="font-mono text-xs text-center" style={{ color: "var(--cjsc-muted)" }}>CONNECT WALLET TO BUY</p>
               )}
             </div>
           ) : (
-            <div className="bg-zinc-800/50 rounded-lg p-4 space-y-3">
-              <p className="text-zinc-500 text-sm">Not currently listed</p>
+            <div className="rounded p-4 space-y-3 border" style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)" }}>
+              <p className="font-mono text-xs" style={{ color: "var(--cjsc-muted)" }}>NOT CURRENTLY LISTED</p>
               {isOwner && activeMode ? (
-                <button onClick={() => onListRequest?.(token.token_id)} className="w-full py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition">
-                  List for Sale
+                <button
+                  onClick={() => onListRequest?.(token.token_id)}
+                  className="w-full py-2.5 rounded font-display text-sm font-bold uppercase tracking-wider text-white transition hover:brightness-110"
+                  style={{ background: "var(--cjsc-red)" }}
+                >
+                  LIST FOR SALE
                 </button>
               ) : !activeMode ? (
-                <p className="text-zinc-500 text-xs text-center">Connect a wallet to interact</p>
+                <p className="font-mono text-[10px] text-center" style={{ color: "var(--cjsc-muted)" }}>CONNECT WALLET TO INTERACT</p>
               ) : null}
             </div>
           )}
 
           {attrs.length > 0 && (
             <div>
-              <h3 className="text-sm font-medium text-zinc-400 mb-2">Attributes</h3>
+              <h3 className="font-mono text-[10px] uppercase tracking-widest mb-2" style={{ color: "var(--cjsc-cyan)" }}>ATTRIBUTES</h3>
               <div className="grid grid-cols-2 gap-2">
                 {attrs.map((a, i) => (
-                  <div key={i} className="bg-zinc-800 rounded-lg p-2 text-center">
-                    <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{a.trait_type}</p>
-                    <p className="text-xs text-zinc-200 font-medium">{a.value}</p>
+                  <div key={i} className="rounded p-2 text-center border" style={{ background: "var(--cjsc-card)", borderColor: "var(--cjsc-border)" }}>
+                    <p className="font-mono text-[9px] uppercase tracking-widest" style={{ color: "var(--cjsc-cyan)" }}>{a.trait_type}</p>
+                    <p className="font-body text-xs font-medium" style={{ color: "var(--cjsc-fg)" }}>{a.value}</p>
                   </div>
                 ))}
               </div>

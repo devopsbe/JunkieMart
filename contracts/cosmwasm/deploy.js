@@ -1,7 +1,7 @@
 require("dotenv").config();
 const fs = require("fs");
 const { SigningCosmWasmClient } = require("@cosmjs/cosmwasm-stargate");
-const { DirectSecp256k1HdWallet } = require("@cosmjs/proto-signing");
+const { DirectSecp256k1HdWallet, DirectSecp256k1Wallet } = require("@cosmjs/proto-signing");
 const { GasPrice } = require("@cosmjs/stargate");
 
 const RPC = "https://rpc.sei-apis.com";
@@ -14,22 +14,27 @@ const WASM_PATH =
   "./artifacts/junkies_marketplace.wasm";
 
 async function main() {
+  let wallet;
+  const pk = process.env.DEPLOYER_PRIVATE_KEY;
   const raw = process.env.DEPLOYER_MNEMONIC;
-  if (!raw) {
-    console.error("Set DEPLOYER_MNEMONIC in .env (12 or 24 word seed phrase)");
-    process.exit(1);
-  }
-  const mnemonic = raw.trim().replace(/\s+/g, " ");
-  const wordCount = mnemonic.split(" ").length;
-  console.log(`Mnemonic loaded: ${wordCount} words`);
-  if (![12, 15, 18, 21, 24].includes(wordCount)) {
-    console.error(`Expected 12 or 24 words, got ${wordCount}. Check your .env file.`);
-    process.exit(1);
-  }
 
-  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, {
-    prefix: CHAIN_PREFIX,
-  });
+  if (pk) {
+    const key = Uint8Array.from(Buffer.from(pk.replace(/^0x/, ""), "hex"));
+    wallet = await DirectSecp256k1Wallet.fromKey(key, CHAIN_PREFIX);
+    console.log("Loaded wallet from private key");
+  } else if (raw) {
+    const mnemonic = raw.trim().replace(/\s+/g, " ");
+    const wordCount = mnemonic.split(" ").length;
+    console.log(`Mnemonic loaded: ${wordCount} words`);
+    if (![12, 15, 18, 21, 24].includes(wordCount)) {
+      console.error(`Expected 12 or 24 words, got ${wordCount}. Check your .env file.`);
+      process.exit(1);
+    }
+    wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix: CHAIN_PREFIX });
+  } else {
+    console.error("Set DEPLOYER_PRIVATE_KEY or DEPLOYER_MNEMONIC in .env");
+    process.exit(1);
+  }
   const [account] = await wallet.getAccounts();
   console.log("Deployer address:", account.address);
 

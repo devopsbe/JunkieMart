@@ -1,1 +1,37 @@
 @import "tailwindcss";
+
+:root {
+  --cjsc-bg: #08091A;
+  --cjsc-card: #121327;
+  --cjsc-border: #1E2040;
+  --cjsc-fg: #E8E8EF;
+  --cjsc-muted: #737380;
+  --cjsc-red: #E81336;
+  --cjsc-green: #00CC66;
+  --cjsc-purple: #7C3AED;
+  --cjsc-gold: #CDA215;
+  --cjsc-cyan: #00B4D8;
+  --cjsc-orange: #FF6600;
+}
+
+body {
+  margin: 0;
+  background: var(--cjsc-bg);
+  color: var(--cjsc-fg);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display { font-family: 'Space Grotesk', sans-serif; }
+.font-mono { font-family: 'JetBrains Mono', monospace; }
+.font-body { font-family: 'DM Sans', sans-serif; }
+
+::selection {
+  background: var(--cjsc-red);
+  color: white;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
